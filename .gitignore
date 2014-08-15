@@ -181,3 +181,8 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+
+# Repository Specific
+output/
+lib/
+src/VersionAssemblyInfo.cs
