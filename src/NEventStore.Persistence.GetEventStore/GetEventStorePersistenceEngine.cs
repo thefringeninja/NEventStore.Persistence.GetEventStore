@@ -132,11 +132,6 @@ namespace NEventStore.Persistence.GetEventStore
             _connection.ConnectAsync().Wait();
         }
 
-        public IEnumerable<ICommit> GetFrom(string bucketId, DateTime start)
-        {
-            throw new NotSupportedException();
-        }
-
         public IEnumerable<ICommit> GetFrom(string checkpointToken = null)
         {
             ThrowWhenDisposed();
@@ -153,20 +148,6 @@ namespace NEventStore.Persistence.GetEventStore
         public ICheckpoint GetCheckpoint(string checkpointToken = null)
         {
             return GetEventStoreCheckpoint.Parse(checkpointToken);
-        }
-
-        public IEnumerable<ICommit> GetFromTo(string bucketId, DateTime start, DateTime end)
-        {
-            throw new NotSupportedException();
-        }
-
-        public IEnumerable<ICommit> GetUndispatchedCommits()
-        {
-            yield break;
-        }
-
-        public void MarkCommitAsDispatched(ICommit commit)
-        {
         }
 
         public void Purge()
