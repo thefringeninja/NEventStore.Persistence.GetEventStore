@@ -61,317 +61,200 @@ namespace NEventStore.Persistence.GetEventStore {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Adding wireup registration callback..
+        ///   Looks up a localized string similar to Attempt to use storage after it has been disposed..
         /// </summary>
-        internal static string AddingWireupCallback {
+        internal static string AlreadyDisposed {
             get {
-                return ResourceManager.GetString("AddingWireupCallback", resourceCulture);
+                return ResourceManager.GetString("AlreadyDisposed", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Adding wireup registration for an object instance of type &apos;{0}&apos;..
+        ///   Looks up a localized string similar to Attempting to commit {0} events on stream &apos;{1}&apos; at sequence {2} in bucket &apos;{3}&apos;..
         /// </summary>
-        internal static string AddingWireupRegistration {
+        internal static string AttemptingToCommit {
             get {
-                return ResourceManager.GetString("AddingWireupRegistration", resourceCulture);
+                return ResourceManager.GetString("AttemptingToCommit", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring the store to dispatch messages asynchronously..
+        ///   Looks up a localized string similar to Commit &apos;{0}&apos; persisted successfully..
         /// </summary>
-        internal static string AsyncDispatchSchedulerRegistered {
+        internal static string CommitPersisted {
             get {
-                return ResourceManager.GetString("AsyncDispatchSchedulerRegistered", resourceCulture);
+                return ResourceManager.GetString("CommitPersisted", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Attempting to resolve existing instance..
+        ///   Looks up a localized string similar to Concurrent write detected..
         /// </summary>
-        internal static string AttemptingToResolveInstance {
+        internal static string ConcurrentWriteDetected {
             get {
-                return ResourceManager.GetString("AttemptingToResolveInstance", resourceCulture);
+                return ResourceManager.GetString("ConcurrentWriteDetected", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring SQL engine to auto-detect dialect..
+        ///   Looks up a localized string similar to Deleting stream &apos;{0}&apos; from bucket &apos;{1}&apos;..
         /// </summary>
-        internal static string AutoDetectDialect {
+        internal static string DeletingStream {
             get {
-                return ResourceManager.GetString("AutoDetectDialect", resourceCulture);
+                return ResourceManager.GetString("DeletingStream", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Building (and storing) new instance for later calls..
+        ///   Looks up a localized string similar to Deserializing commit from record using serializer of type &apos;{0}&apos;..
         /// </summary>
-        internal static string BuildingAndStoringNewInstance {
+        internal static string DeserializingCommit {
             get {
-                return ResourceManager.GetString("BuildingAndStoringNewInstance", resourceCulture);
+                return ResourceManager.GetString("DeserializingCommit", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Building the persistence engine..
+        ///   Looks up a localized string similar to Duplicate commit detected; throwing..
         /// </summary>
-        internal static string BuildingEngine {
+        internal static string DuplicateCommit {
             get {
-                return ResourceManager.GetString("BuildingEngine", resourceCulture);
+                return ResourceManager.GetString("DuplicateCommit", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Building new instance..
+        ///   Looks up a localized string similar to Getting all commits for stream &apos;{0}&apos; between revisions &apos;{1}&apos; and &apos;{2}&apos;..
         /// </summary>
-        internal static string BuildingNewInstance {
+        internal static string GettingAllCommitsBetween {
             get {
-                return ResourceManager.GetString("BuildingNewInstance", resourceCulture);
+                return ResourceManager.GetString("GettingAllCommitsBetween", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring serializer to compress the serialized payload..
+        ///   Looks up a localized string similar to Getting all commits from &apos;{0}&apos; forward from bucket &apos;{0}&apos;..
         /// </summary>
-        internal static string ConfiguringCompression {
+        internal static string GettingAllCommitsFrom {
             get {
-                return ResourceManager.GetString("ConfiguringCompression", resourceCulture);
+                return ResourceManager.GetString("GettingAllCommitsFrom", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring serializer to encrypt the serialized payload..
+        ///   Looks up a localized string similar to Getting all commits from checkpoint &apos;{0}&apos;..
         /// </summary>
-        internal static string ConfiguringEncryption {
+        internal static string GettingAllCommitsFromCheckpoint {
             get {
-                return ResourceManager.GetString("ConfiguringEncryption", resourceCulture);
+                return ResourceManager.GetString("GettingAllCommitsFromCheckpoint", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring persistence engine to enlist in ambient transactions using TransactionScope..
+        ///   Looks up a localized string similar to Getting all commits from &apos;{0}&apos; to &apos;{1}&apos;..
         /// </summary>
-        internal static string ConfiguringEngineEnlistment {
+        internal static string GettingAllCommitsFromTo {
             get {
-                return ResourceManager.GetString("ConfiguringEngineEnlistment", resourceCulture);
+                return ResourceManager.GetString("GettingAllCommitsFromTo", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring persistence engine to initialize..
+        ///   Looks up a localized string similar to Initializing storage engine..
         /// </summary>
-        internal static string ConfiguringEngineInitialization {
+        internal static string InitializingStorage {
             get {
-                return ResourceManager.GetString("ConfiguringEngineInitialization", resourceCulture);
+                return ResourceManager.GetString("InitializingStorage", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring persistence engine to track performance.
+        ///   Looks up a localized string similar to The object has been disposed and cannot be used..
         /// </summary>
-        internal static string ConfiguringEnginePerformanceTracking {
+        internal static string ObjectAlreadyDisposed {
             get {
-                return ResourceManager.GetString("ConfiguringEnginePerformanceTracking", resourceCulture);
+                return ResourceManager.GetString("ObjectAlreadyDisposed", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Registration configured to resolve a new instance per call..
+        ///   Looks up a localized string similar to Unable to open connection &apos;{0}&apos;..
         /// </summary>
-        internal static string ConfiguringInstancePerCall {
+        internal static string OpenFailed {
             get {
-                return ResourceManager.GetString("ConfiguringInstancePerCall", resourceCulture);
+                return ResourceManager.GetString("OpenFailed", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Using SQL connection factory of type &apos;{0}&apos;..
+        ///   Looks up a localized string similar to Opening connection &apos;{0}&apos;..
         /// </summary>
-        internal static string ConnectionFactorySpecified {
+        internal static string OpeningConnection {
             get {
-                return ResourceManager.GetString("ConnectionFactorySpecified", resourceCulture);
+                return ResourceManager.GetString("OpeningConnection", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Registering SQL dialect of type &apos;{0}&apos;..
+        ///   Looks up a localized string similar to Opening master connection &apos;{0}&apos;.
         /// </summary>
-        internal static string DialectSpecified {
+        internal static string OpeningMasterConnection {
             get {
-                return ResourceManager.GetString("DialectSpecified", resourceCulture);
+                return ResourceManager.GetString("OpeningMasterConnection", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Configuring the store to upconvert events when fetched..
+        ///   Looks up a localized string similar to Opening new threaded scope for key &apos;{0}&apos;; scope is root: {1}..
         /// </summary>
-        internal static string EventUpconverterRegistered {
+        internal static string OpeningThreadScope {
             get {
-                return ResourceManager.GetString("EventUpconverterRegistered", resourceCulture);
+                return ResourceManager.GetString("OpeningThreadScope", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Will scan for event upconverters from the following assemblies: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Purging all stored data for bucket &apos;{0}&apos;..
         /// </summary>
-        internal static string EventUpconvertersLoadedFrom {
+        internal static string PurgingBucket {
             get {
-                return ResourceManager.GetString("EventUpconvertersLoadedFrom", resourceCulture);
+                return ResourceManager.GetString("PurgingBucket", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cannot only compare {0} with {1}..
+        ///   Looks up a localized string similar to Purging all stored data..
         /// </summary>
-        internal static string FailedToCompareCheckpoint {
+        internal static string PurgingStorage {
             get {
-                return ResourceManager.GetString("FailedToCompareCheckpoint", resourceCulture);
+                return ResourceManager.GetString("PurgingStorage", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Initializing the configured persistence engine..
+        ///   Looks up a localized string similar to Shutting down persistence..
         /// </summary>
-        internal static string InitializingEngine {
+        internal static string ShuttingDownPersistence {
             get {
-                return ResourceManager.GetString("InitializingEngine", resourceCulture);
+                return ResourceManager.GetString("ShuttingDownPersistence", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The instance provided cannot be null..
+        ///   Looks up a localized string similar to Storage threw exception of type &apos;{0}&apos;, wrapping and re-throwing..
         /// </summary>
-        internal static string InstanceCannotBeNull {
+        internal static string StorageThrewException {
             get {
-                return ResourceManager.GetString("InstanceCannotBeNull", resourceCulture);
+                return ResourceManager.GetString("StorageThrewException", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Persistence engine configured to page every &apos;{0}&apos; records..
+        ///   Looks up a localized string similar to streamId is null, empty, or whitespace..
         /// </summary>
-        internal static string PagingSpecified {
+        internal static string StreamIdIsNullEmptyOrWhiteSpace {
             get {
-                return ResourceManager.GetString("PagingSpecified", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Registering persistence engine of type &apos;{0}&apos;..
-        /// </summary>
-        internal static string RegisteringPersistenceEngine {
-            get {
-                return ResourceManager.GetString("RegisteringPersistenceEngine", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Registering wireup instance for service of type &apos;{0}&apos;..
-        /// </summary>
-        internal static string RegisteringServiceInstance {
-            get {
-                return ResourceManager.GetString("RegisteringServiceInstance", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Registering wireup resolver for service of type &apos;{0}&apos;..
-        /// </summary>
-        internal static string RegisteringWireupCallback {
-            get {
-                return ResourceManager.GetString("RegisteringWireupCallback", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Resolving instance..
-        /// </summary>
-        internal static string ResolvingInstance {
-            get {
-                return ResourceManager.GetString("ResolvingInstance", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Attempting to resolve instance for service of type &apos;{0}&apos;..
-        /// </summary>
-        internal static string ResolvingService {
-            get {
-                return ResourceManager.GetString("ResolvingService", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Scheduler not started..
-        /// </summary>
-        internal static string SchedulerNotStarted {
-            get {
-                return ResourceManager.GetString("SchedulerNotStarted", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Registering stream ID hasher of type &apos;{0}&apos;.
-        /// </summary>
-        internal static string StreamIdHasherSpecified {
-            get {
-                return ResourceManager.GetString("StreamIdHasherSpecified", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Configuring the store to dispatch messages synchronously..
-        /// </summary>
-        internal static string SyncDispatchSchedulerRegistered {
-            get {
-                return ResourceManager.GetString("SyncDispatchSchedulerRegistered", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Only the synchronous dispatcher can enlist in two-phase commits..
-        /// </summary>
-        internal static string SynchronousDispatcherTwoPhaseCommits {
-            get {
-                return ResourceManager.GetString("SynchronousDispatcherTwoPhaseCommits", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to The type provided must be registered as an interface rather than as a concrete type, e.g. &quot;container.Register&lt;IDispatchCommits&gt;(instance);&quot;..
-        /// </summary>
-        internal static string TypeMustBeInterface {
-            get {
-                return ResourceManager.GetString("TypeMustBeInterface", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Unable to resolve requested instance of type &apos;{0}&apos;..
-        /// </summary>
-        internal static string UnableToResolve {
-            get {
-                return ResourceManager.GetString("UnableToResolve", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Wrapping serializer of type &apos;{0}&apos; in RijndaelSerializer..
-        /// </summary>
-        internal static string WrappingSerializerEncryption {
-            get {
-                return ResourceManager.GetString("WrappingSerializerEncryption", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Wrapping serializer of type &apos;{0}&apos; in GZipSerializer..
-        /// </summary>
-        internal static string WrappingSerializerGZip {
-            get {
-                return ResourceManager.GetString("WrappingSerializerGZip", resourceCulture);
+                return ResourceManager.GetString("StreamIdIsNullEmptyOrWhiteSpace", resourceCulture);
             }
         }
     }

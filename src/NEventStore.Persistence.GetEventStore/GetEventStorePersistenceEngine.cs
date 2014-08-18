@@ -35,8 +35,8 @@ namespace NEventStore.Persistence.GetEventStore
                 return;
             }
 
-            Logger.Warn(Resources.AlreadyDisposed);
-            throw new ObjectDisposedException(Resources.AlreadyDisposed);
+            Logger.Warn(Messages.AlreadyDisposed);
+            throw new ObjectDisposedException(Messages.AlreadyDisposed);
         }
 
         private static Action<Task<WriteResult>> AppendToStreamContinuation(TaskCompletionSource<ICommit> source, CommitAttempt attempt)
@@ -49,6 +49,8 @@ namespace NEventStore.Persistence.GetEventStore
                     {
                         if (e is WrongExpectedVersionException)
                         {
+                            Logger.Info(Messages.ConcurrentWriteDetected);
+
                             source.SetException(new ConcurrencyException(e.Message, e));
                             return true;
                         }
@@ -61,10 +63,13 @@ namespace NEventStore.Persistence.GetEventStore
                     // this should mean a duplicate write that was ignored by GES
                     if (task.Result.LogPosition == Position.End)
                     {
+                        Logger.Info(Messages.DuplicateCommit);
                         source.SetException(new DuplicateCommitException());
                     }
                     else
                     {
+                        Logger.Debug(Messages.CommitPersisted, attempt.CommitId);
+
                         source.SetResult(new Commit(
                             attempt.BucketId,
                             attempt.StreamId,
@@ -84,8 +89,8 @@ namespace NEventStore.Persistence.GetEventStore
         public void Dispose()
         {
             if (_disposed) return;
-            Logger.Info(Resources.DisposingEngine);
             _connection.Close();
+            Logger.Debug(Messages.ShuttingDownPersistence);
             _disposed = true;
         }
 
@@ -93,7 +98,7 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
-            Logger.Debug(Resources.GettingAllCommitsFromRevision, streamId, minRevision, maxRevision);
+            Logger.Debug(Messages.GettingAllCommitsBetween, streamId, minRevision, maxRevision);
             
             var reader = new EventReader(_connection, _serializer);
 
@@ -104,7 +109,7 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
-            Logger.Debug(Resources.AttemptingToCommit, attempt.CommitId, attempt.StreamId, attempt.CommitSequence);
+            Logger.Debug(Messages.AttemptingToCommit, attempt.Events.Count, attempt.StreamId, attempt.CommitSequence, attempt.BucketId);
             
             var source = new TaskCompletionSource<ICommit>();
 
@@ -140,7 +145,7 @@ namespace NEventStore.Persistence.GetEventStore
             
             if (Interlocked.Increment(ref _initialized) > 0) return;
 
-            Logger.Debug(Resources.InitializingPersistence);
+            Logger.Debug(Messages.InitializingStorage);
 
             _connection = _buildConnection();
             _connection.ConnectAsync().Wait();
@@ -150,7 +155,7 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
-            Logger.Debug(Resources.GettingAllCommitsFromCheckpoint, checkpointToken);
+            Logger.Debug(Messages.GettingAllCommitsFromCheckpoint, checkpointToken);
 
             GetEventStoreCheckpoint checkpoint = GetEventStoreCheckpoint.Parse(checkpointToken);
 
@@ -168,14 +173,14 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
-            Logger.Warn(Resources.PurgingStore);
+            Logger.Warn(Messages.PurgingStorage);
         }
 
         public void Purge(string bucketId)
         {
             ThrowWhenDisposed();
 
-            Logger.Warn(Resources.PurgingStore);
+            Logger.Warn(Messages.PurgingBucket, bucketId);
         }
 
         public void Drop()
@@ -189,7 +194,7 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
-            Logger.Warn(Resources.DeletingStream, streamId, bucketId);
+            Logger.Warn(Messages.DeletingStream, streamId, bucketId);
 
             throw new NotImplementedException();
         }
