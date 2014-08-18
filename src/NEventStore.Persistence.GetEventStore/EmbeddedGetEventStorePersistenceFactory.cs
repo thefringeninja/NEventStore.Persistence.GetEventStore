@@ -1,29 +1,29 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Threading;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Embedded;
-using EventStore.Common.Options;
-using EventStore.Common.Utils;
-using EventStore.Core;
-using EventStore.Core.Authentication;
-using EventStore.Core.Bus;
-using EventStore.Core.Cluster.Settings;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.Gossip;
-using EventStore.Core.Services.Monitoring;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Util;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NEventStore.Serialization;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.IO;
+    using System.Net;
+    using System.Threading;
+    using EventStore.ClientAPI;
+    using EventStore.ClientAPI.Embedded;
+    using EventStore.Common.Options;
+    using EventStore.Common.Utils;
+    using EventStore.Core;
+    using EventStore.Core.Authentication;
+    using EventStore.Core.Bus;
+    using EventStore.Core.Cluster.Settings;
+    using EventStore.Core.Messages;
+    using EventStore.Core.Messaging;
+    using EventStore.Core.Services.Gossip;
+    using EventStore.Core.Services.Monitoring;
+    using EventStore.Core.TransactionLog.Checkpoint;
+    using EventStore.Core.TransactionLog.Chunks;
+    using EventStore.Core.TransactionLog.FileNamingStrategy;
+    using EventStore.Core.Util;
+    using EventStore.Projections.Core.Messages;
+    using EventStore.Projections.Core.Services.Processing;
+    using NEventStore.Serialization;
+
     public class EmbeddedGetEventStorePersistenceFactory : IPersistenceFactory
     {
         private readonly string _database;
@@ -119,10 +119,10 @@ namespace NEventStore.Persistence.GetEventStore
         protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize,
             bool inMemDb)
         {
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint writerChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint chaserChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint epochChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint truncateChk;
+            ICheckpoint writerChk;
+            ICheckpoint chaserChk;
+            ICheckpoint epochChk;
+            ICheckpoint truncateChk;
 
             if (inMemDb)
             {

@@ -1,7 +1,7 @@
-using System;
-
 namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+
     internal static class Guard
     {
         public static void Against<TException>(bool condition, params object[] args)

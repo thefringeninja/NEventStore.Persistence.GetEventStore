@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using EventStore.Common.Options;
-using EventStore.Core;
-using EventStore.Core.Bus;
-using EventStore.Core.Messages;
-using EventStore.Core.Services.AwakeReaderService;
-using EventStore.Projections.Core;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using EventStore.Common.Options;
+    using EventStore.Core;
+    using EventStore.Core.Bus;
+    using EventStore.Core.Messages;
+    using EventStore.Core.Services.AwakeReaderService;
+    using EventStore.Projections.Core;
+
     internal sealed class ಠ_ಠProjectionsSubsystem : ISubsystem
     {
         public const int VERSION = 3;
