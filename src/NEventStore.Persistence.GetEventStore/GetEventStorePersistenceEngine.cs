@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using NEventStore.Serialization;
@@ -37,38 +38,45 @@ namespace NEventStore.Persistence.GetEventStore
             return reader.ReadStream(Format.EventStoreStreamId(bucketId, streamId), minRevision, maxRevision);
         }
 
-        public ICommit Commit(CommitAttempt attempt)
+        public Task<ICommit> Commit(CommitAttempt attempt)
         {
+            var source = new TaskCompletionSource<ICommit>();
+
             var getEventStoreCommit = new GetEventStoreCommitAttempt(attempt, _serializer);
 
-            try
-            {
-                _connection.AppendToStreamAsync(getEventStoreCommit.StreamId, getEventStoreCommit.ExpectedVersion,
-                    getEventStoreCommit).Wait();
-            }
-            catch (AggregateException ex)
-            {
-                ex.Handle(e =>
+            _connection.AppendToStreamAsync(getEventStoreCommit.StreamId, getEventStoreCommit.ExpectedVersion,
+                getEventStoreCommit)
+                .ContinueWith(task =>
                 {
-                    if (e is WrongExpectedVersionException)
+                    if (task.Exception != null)
                     {
-                        throw new ConcurrencyException(e.Message, e);
+                        task.Exception.Handle(e =>
+                        {
+                            if (e is WrongExpectedVersionException)
+                            {
+                                source.SetException(new ConcurrencyException(e.Message, e));
+                                return true;
+                            }
+
+                            return false;
+                        });
                     }
-
-                    return false;
+                    else
+                    {
+                        source.SetResult(new Commit(
+                            attempt.BucketId,
+                            attempt.StreamId,
+                            attempt.StreamRevision,
+                            attempt.CommitId,
+                            attempt.CommitSequence,
+                            attempt.CommitStamp,
+                            attempt.CommitSequence.ToString(),
+                            attempt.Headers,
+                            attempt.Events));
+                    }
                 });
-            }
 
-            return new Commit(
-                attempt.BucketId,
-                attempt.StreamId,
-                attempt.StreamRevision,
-                attempt.CommitId,
-                attempt.CommitSequence,
-                attempt.CommitStamp,
-                attempt.CommitSequence.ToString(),
-                attempt.Headers,
-                attempt.Events);
+            return source.Task;
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
