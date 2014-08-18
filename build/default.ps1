@@ -40,7 +40,7 @@ task Compile {
 task Test -precondition { $runPersistenceTests } {
 	"Persistence Tests"
 	EnsureDirectory $output_directory
-	Invoke-XUnit -Path $src_directory -TestSpec '*Persistence.GetEventStore.Tests.dll' `
+	Invoke-XUnit -Path $output_directory -TestSpec '*Persistence.GetEventStore.Tests.dll' `
     -SummaryPath $output_directory\persistence_tests.xml `
     -XUnitPath $xunit_path
 }
