@@ -42,6 +42,7 @@ namespace NEventStore.Persistence.GetEventStore
         public void Dispose()
         {
             if (_disposed) return;
+            Logger.Info(Resources.DisposingEngine);
             _connection.Close();
             _disposed = true;
         }
@@ -50,6 +51,8 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
+            Logger.Debug(Resources.GettingAllCommitsFromRevision, streamId, minRevision, maxRevision);
+            
             var reader = new EventReader(_connection, _serializer);
 
             return reader.ReadStream(Format.EventStoreStreamId(bucketId, streamId), minRevision, maxRevision);
@@ -59,6 +62,8 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ThrowWhenDisposed();
 
+            Logger.Debug(Resources.AttemptingToCommit, attempt.CommitId, attempt.StreamId, attempt.CommitSequence);
+            
             var source = new TaskCompletionSource<ICommit>();
 
             var getEventStoreCommit = new GetEventStoreCommitAttempt(attempt, _serializer);
@@ -120,6 +125,9 @@ namespace NEventStore.Persistence.GetEventStore
             ThrowWhenDisposed();
             
             if (Interlocked.Increment(ref _initialized) > 0) return;
+
+            Logger.Debug(Resources.InitializingPersistence);
+
             _connection = _buildConnection();
             _connection.ConnectAsync().Wait();
         }
@@ -132,7 +140,9 @@ namespace NEventStore.Persistence.GetEventStore
         public IEnumerable<ICommit> GetFrom(string checkpointToken = null)
         {
             ThrowWhenDisposed();
-            
+
+            Logger.Debug(Resources.GettingAllCommitsFromCheckpoint, checkpointToken);
+
             GetEventStoreCheckpoint checkpoint = GetEventStoreCheckpoint.Parse(checkpointToken);
 
             var reader = new EventReader(_connection, _serializer);
@@ -162,22 +172,30 @@ namespace NEventStore.Persistence.GetEventStore
         public void Purge()
         {
             ThrowWhenDisposed();
+
+            Logger.Warn(Resources.PurgingStore);
         }
 
         public void Purge(string bucketId)
         {
             ThrowWhenDisposed();
+
+            Logger.Warn(Resources.PurgingStore);
         }
 
         public void Drop()
         {
             ThrowWhenDisposed();
+
             _dropAction();
         }
 
         public void DeleteStream(string bucketId, string streamId)
         {
             ThrowWhenDisposed();
+
+            Logger.Warn(Resources.DeletingStream, streamId, bucketId);
+
             throw new NotImplementedException();
         }
 
