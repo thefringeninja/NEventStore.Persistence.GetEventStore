@@ -15,6 +15,8 @@ namespace NEventStore.Persistence.GetEventStore
         {
             _connectionSettingsBuilder = ConnectionSettings.Create();
 
+            WithTcpConnectionTo(new IPEndPoint(IPAddress.Loopback, 1113));
+
             Container.Register(container => _factoryFactory(container.Resolve<ISerialize>()).Build());
         }
 

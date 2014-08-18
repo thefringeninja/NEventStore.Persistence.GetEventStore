@@ -11,7 +11,7 @@
         }
         public IPersistStreams Build()
         {
-            return new EmbeddedGetEventStorePersistenceFactory(new JsonSerializer()).Build();
+            return EmbeddedGetEventStorePersistenceFactory.InMemory(new JsonSerializer()).Build();
         }
     }
 

@@ -29,12 +29,26 @@
         private readonly string _database;
         private readonly DateTime _startupTimeStamp;
         private readonly ISerialize _serializer;
+        private readonly bool _inMemDb;
+        private readonly int _chunkSize;
 
-        public EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, string database = null)
+        private EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, int chunkSize = TFConsts.ChunkSize, string database = null, bool inMemDb = false)
         {
             _serializer = serializer;
             _database = database;
             _startupTimeStamp = DateTime.UtcNow;
+            _inMemDb = inMemDb;
+            _chunkSize = chunkSize;
+        }
+
+        public static EmbeddedGetEventStorePersistenceFactory OnDisk(ISerialize serializer, string database = null, int chunkSize = TFConsts.ChunkSize)
+        {
+            return new EmbeddedGetEventStorePersistenceFactory(serializer, chunkSize, database);
+        }
+
+        public static EmbeddedGetEventStorePersistenceFactory InMemory(ISerialize serializer)
+        {
+            return new EmbeddedGetEventStorePersistenceFactory(serializer, inMemDb: true);
         }
 
         public IPersistStreams Build()
@@ -107,7 +121,7 @@
         {
             ClusterVNodeSettings clusterVNodeSettings = CreateClusterVNodeSettings();
 
-            var node = new ClusterVNode(new TFChunkDb(CreateDbConfig(dbPath, -1, TFConsts.ChunksCacheSize, true)),
+            var node = new ClusterVNode(new TFChunkDb(CreateDbConfig(dbPath, _chunkSize, -1, TFConsts.ChunksCacheSize, _inMemDb)),
                 clusterVNodeSettings, new KnownEndpointGossipSeedSource(new IPEndPoint[0]), true,
                 Opts.MaxMemtableSizeDefault, projections);
             return node;
@@ -118,8 +132,7 @@
             return new ಠ_ಠProjectionsSubsystem(3, ProjectionType.All);
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize,
-            bool inMemDb)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int chunkSize, int cachedChunks, long chunksCacheSize, bool inMemDb)
         {
             ICheckpoint writerChk;
             ICheckpoint chaserChk;
@@ -161,11 +174,11 @@
                 }
             }
             long cache = cachedChunks >= 0
-                ? cachedChunks*(long) (TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+                ? cachedChunks*(long) (chunkSize + ChunkHeader.Size + ChunkFooter.Size)
                 : chunksCacheSize;
             var nodeConfig = new TFChunkDbConfig(dbPath,
                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                TFConsts.ChunkSize,
+                chunkSize,
                 cache,
                 writerChk,
                 chaserChk,
