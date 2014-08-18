@@ -39,6 +39,48 @@ namespace NEventStore.Persistence.GetEventStore
             throw new ObjectDisposedException(Resources.AlreadyDisposed);
         }
 
+        private static Action<Task<WriteResult>> AppendToStreamContinuation(TaskCompletionSource<ICommit> source, CommitAttempt attempt)
+        {
+            return task =>
+            {
+                if (task.Exception != null)
+                {
+                    task.Exception.Handle(e =>
+                    {
+                        if (e is WrongExpectedVersionException)
+                        {
+                            source.SetException(new ConcurrencyException(e.Message, e));
+                            return true;
+                        }
+
+                        return false;
+                    });
+                }
+                else
+                {
+                    // this should mean a duplicate write that was ignored by GES
+                    if (task.Result.LogPosition == Position.End)
+                    {
+                        source.SetException(new DuplicateCommitException());
+                    }
+                    else
+                    {
+                        source.SetResult(new Commit(
+                            attempt.BucketId,
+                            attempt.StreamId,
+                            attempt.StreamRevision,
+                            attempt.CommitId,
+                            attempt.CommitSequence,
+                            attempt.CommitStamp,
+                            attempt.CommitSequence.ToString(),
+                            attempt.Headers,
+                            attempt.Events));
+                    }
+                }
+            };
+        }
+
+
         public void Dispose()
         {
             if (_disposed) return;
@@ -70,43 +112,7 @@ namespace NEventStore.Persistence.GetEventStore
 
             _connection.AppendToStreamAsync(getEventStoreCommit.StreamId, getEventStoreCommit.ExpectedVersion,
                 getEventStoreCommit)
-                .ContinueWith(task =>
-                {
-                    if (task.Exception != null)
-                    {
-                        task.Exception.Handle(e =>
-                        {
-                            if (e is WrongExpectedVersionException)
-                            {
-                                source.SetException(new ConcurrencyException(e.Message, e));
-                                return true;
-                            }
-
-                            return false;
-                        });
-                    }
-                    else
-                    {
-                        // this should mean a duplicate write that was ignored by GES
-                        if (task.Result.LogPosition == Position.End)
-                        {
-                            source.SetException(new DuplicateCommitException());
-                        }
-                        else
-                        {
-                            source.SetResult(new Commit(
-                                attempt.BucketId,
-                                attempt.StreamId,
-                                attempt.StreamRevision,
-                                attempt.CommitId,
-                                attempt.CommitSequence,
-                                attempt.CommitStamp,
-                                attempt.CommitSequence.ToString(),
-                                attempt.Headers,
-                                attempt.Events));
-                        }
-                    }
-                });
+                .ContinueWith(AppendToStreamContinuation(source, attempt));
 
             return source.Task;
         }
