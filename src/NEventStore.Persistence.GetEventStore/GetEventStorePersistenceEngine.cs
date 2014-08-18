@@ -87,16 +87,24 @@ namespace NEventStore.Persistence.GetEventStore
                     }
                     else
                     {
-                        source.SetResult(new Commit(
-                            attempt.BucketId,
-                            attempt.StreamId,
-                            attempt.StreamRevision,
-                            attempt.CommitId,
-                            attempt.CommitSequence,
-                            attempt.CommitStamp,
-                            attempt.CommitSequence.ToString(),
-                            attempt.Headers,
-                            attempt.Events));
+                        // this should mean a duplicate write that was ignored by GES
+                        if (task.Result.LogPosition == Position.End)
+                        {
+                            source.SetException(new DuplicateCommitException());
+                        }
+                        else
+                        {
+                            source.SetResult(new Commit(
+                                attempt.BucketId,
+                                attempt.StreamId,
+                                attempt.StreamRevision,
+                                attempt.CommitId,
+                                attempt.CommitSequence,
+                                attempt.CommitStamp,
+                                attempt.CommitSequence.ToString(),
+                                attempt.Headers,
+                                attempt.Events));
+                        }
                     }
                 });
 
