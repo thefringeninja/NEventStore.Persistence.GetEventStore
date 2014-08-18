@@ -28,9 +28,11 @@
     {
         private readonly string _database;
         private readonly DateTime _startupTimeStamp;
+        private readonly ISerialize _serializer;
 
-        public EmbeddedGetEventStorePersistenceFactory(string database = null)
+        public EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, string database = null)
         {
+            _serializer = serializer;
             _database = database;
             _startupTimeStamp = DateTime.UtcNow;
         }
@@ -61,7 +63,7 @@
                 {
                     Directory.Delete(dbPath, true);
                 }
-            }, new JsonSerializer());
+            }, _serializer);
         }
 
         private Func<IEventStoreConnection> BuildConnectionBuilder(ClusterVNode node,

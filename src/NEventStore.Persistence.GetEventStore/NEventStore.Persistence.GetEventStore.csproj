@@ -84,10 +84,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EmbeddedGetEventStorePersistenceFactory.cs" />
+    <Compile Include="EmbeddedGetEventStoreWireup.cs" />
     <Compile Include="Format.cs" />
     <Compile Include="GetEventStoreCommitAttempt.cs" />
     <Compile Include="GetEventStorePersistenceEngine.cs" />
     <Compile Include="GetEventStoreCheckpoint.cs" />
+    <Compile Include="GetEventStoreWireupExtensions.cs" />
     <Compile Include="Guard.cs" />
     <Compile Include="Messages.Designer.cs">
       <DependentUpon>Messages.resx</DependentUpon>
@@ -99,6 +101,8 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Compile>
+    <Compile Include="TcpGetEventStorePersistenceFactory.cs" />
+    <Compile Include="TcpGetEventStoreWireup.cs" />
     <Compile Include="ಠ_ಠProjectionsSubsystem.cs" />
   </ItemGroup>
   <ItemGroup>
