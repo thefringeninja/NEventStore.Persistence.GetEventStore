@@ -34,7 +34,7 @@ task UpdateVersion {
 
 task Compile {
 	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /t:Clean }
-	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /p:TargetFrameworkVersion=v4.5 /p:OutDir=$output_directory }
+	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /p:TargetFrameworkVersion=v4.5.1 /p:OutDir=$output_directory }
 }
 
 task Test -precondition { $runPersistenceTests } {
