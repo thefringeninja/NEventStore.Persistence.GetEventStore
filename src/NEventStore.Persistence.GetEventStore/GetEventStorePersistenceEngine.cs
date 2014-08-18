@@ -1,20 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using NEventStore.Serialization;
-
 namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using EventStore.ClientAPI;
+    using EventStore.ClientAPI.Exceptions;
+    using NEventStore.Logging;
+    using NEventStore.Serialization;
+
     public class GetEventStorePersistenceEngine : IPersistStreams
     {
+        private static readonly ILog Logger = LogFactory.BuildLogger(typeof(GetEventStorePersistenceEngine));
+
         private readonly Func<IEventStoreConnection> _buildConnection;
         private readonly Action _dropAction;
         private readonly ISerialize _serializer;
         private IEventStoreConnection _connection;
         private int _initialized = -1;
+        private bool _disposed;
 
         public GetEventStorePersistenceEngine(Func<IEventStoreConnection> buildConnection, Action dropAction,
             ISerialize serializer)
@@ -24,15 +28,28 @@ namespace NEventStore.Persistence.GetEventStore
             _serializer = serializer;
         }
 
+        private void ThrowWhenDisposed()
+        {
+            if (!_disposed)
+            {
+                return;
+            }
+
+            Logger.Warn(Resources.AlreadyDisposed);
+            throw new ObjectDisposedException(Resources.AlreadyDisposed);
+        }
+
         public void Dispose()
         {
-            if (IsDisposed) return;
+            if (_disposed) return;
             _connection.Close();
-            IsDisposed = true;
+            _disposed = true;
         }
 
         public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
+            ThrowWhenDisposed();
+
             var reader = new EventReader(_connection, _serializer);
 
             return reader.ReadStream(Format.EventStoreStreamId(bucketId, streamId), minRevision, maxRevision);
@@ -40,6 +57,8 @@ namespace NEventStore.Persistence.GetEventStore
 
         public Task<ICommit> Commit(CommitAttempt attempt)
         {
+            ThrowWhenDisposed();
+
             var source = new TaskCompletionSource<ICommit>();
 
             var getEventStoreCommit = new GetEventStoreCommitAttempt(attempt, _serializer);
@@ -94,10 +113,12 @@ namespace NEventStore.Persistence.GetEventStore
             yield break;
         }
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed { get { return _disposed; } }
 
         public void Initialize()
         {
+            ThrowWhenDisposed();
+            
             if (Interlocked.Increment(ref _initialized) > 0) return;
             _connection = _buildConnection();
             _connection.ConnectAsync().Wait();
@@ -110,6 +131,8 @@ namespace NEventStore.Persistence.GetEventStore
 
         public IEnumerable<ICommit> GetFrom(string checkpointToken = null)
         {
+            ThrowWhenDisposed();
+            
             GetEventStoreCheckpoint checkpoint = GetEventStoreCheckpoint.Parse(checkpointToken);
 
             var reader = new EventReader(_connection, _serializer);
@@ -138,19 +161,23 @@ namespace NEventStore.Persistence.GetEventStore
 
         public void Purge()
         {
+            ThrowWhenDisposed();
         }
 
         public void Purge(string bucketId)
         {
+            ThrowWhenDisposed();
         }
 
         public void Drop()
         {
+            ThrowWhenDisposed();
             _dropAction();
         }
 
         public void DeleteStream(string bucketId, string streamId)
         {
+            ThrowWhenDisposed();
             throw new NotImplementedException();
         }
 
