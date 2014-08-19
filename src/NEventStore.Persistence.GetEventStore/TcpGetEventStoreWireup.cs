@@ -1,14 +1,12 @@
-﻿using System;
-using System.Net;
-using EventStore.ClientAPI;
-using NEventStore.Serialization;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
-    public class TcpGetEventStoreWireup : PersistenceWireup
+    using System;
+    using System.Net;
+    using EventStore.ClientAPI;
+
+    public class TcpGetEventStoreWireup : GetEventStoreWireup
     {
         private ConnectionSettingsBuilder _connectionSettingsBuilder;
-        private Func<ISerialize, TcpGetEventStorePersistenceFactory> _factoryFactory;
         private string _connectionName;
 
         public TcpGetEventStoreWireup(Wireup inner) : base(inner)
@@ -16,13 +14,11 @@ namespace NEventStore.Persistence.GetEventStore
             _connectionSettingsBuilder = ConnectionSettings.Create();
 
             WithTcpConnectionTo(new IPEndPoint(IPAddress.Loopback, 1113));
-
-            Container.Register(container => _factoryFactory(container.Resolve<ISerialize>()).Build());
         }
 
         public TcpGetEventStoreWireup WithTcpConnectionTo(IPEndPoint tcpEndPoint)
         {
-            _factoryFactory = serializer => new TcpGetEventStorePersistenceFactory(_connectionSettingsBuilder, tcpEndPoint, _connectionName, serializer);
+            WithPersisenceFactory(serializer => new TcpGetEventStorePersistenceFactory(_connectionSettingsBuilder, tcpEndPoint, _connectionName, serializer));
 
             return this;
         }
@@ -36,7 +32,7 @@ namespace NEventStore.Persistence.GetEventStore
 
         public TcpGetEventStoreWireup WithClusterSettings(ClusterSettings clusterSettings)
         {
-            _factoryFactory = serializer => new TcpGetEventStorePersistenceFactory(_connectionSettingsBuilder, clusterSettings, _connectionName, serializer);
+            WithPersisenceFactory(serializer => new TcpGetEventStorePersistenceFactory(_connectionSettingsBuilder, clusterSettings, _connectionName, serializer));
 
             return this;
         }

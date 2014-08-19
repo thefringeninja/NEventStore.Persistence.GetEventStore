@@ -5,17 +5,15 @@ namespace NEventStore.Persistence.GetEventStore
     using EventStore.Core.TransactionLog.Chunks;
     using NEventStore.Serialization;
 
-    public class EmbeddedGetEventStoreWireup : PersistenceWireup
+    public class EmbeddedGetEventStoreWireup : GetEventStoreWireup
     {
         private string _database;
         private int _chunkSize;
-        private Func<ISerialize, EmbeddedGetEventStorePersistenceFactory> _factoryFactory;
 
         public EmbeddedGetEventStoreWireup(Wireup inner) : base(inner)
         {
             _chunkSize = TFConsts.ChunkSize;
-            _factoryFactory = InMemory;
-            Container.Register(container => _factoryFactory(container.Resolve<ISerialize>()));
+            WithPersisenceFactory(InMemory);
         }
 
         public EmbeddedGetEventStoreWireup WithDatabaseNamed(string database)
@@ -26,7 +24,7 @@ namespace NEventStore.Persistence.GetEventStore
 
         public EmbeddedGetEventStoreWireup OnDisk(int? chunkSize)
         {
-            _factoryFactory = OnDisk;
+            WithPersisenceFactory(OnDisk);
             return WithChunkSizeOf(chunkSize ?? _chunkSize);
         }
 
@@ -41,7 +39,8 @@ namespace NEventStore.Persistence.GetEventStore
 
         public EmbeddedGetEventStoreWireup InMemory()
         {
-            _factoryFactory = InMemory;
+            WithPersisenceFactory(InMemory);
+
             return this;
         }
 
