@@ -34,6 +34,10 @@
 
         private EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, int chunkSize = TFConsts.ChunkSize, string database = null, bool inMemDb = false)
         {
+            Guard.AgainstNull(serializer, "serializer");
+            Guard.Against<ArgumentOutOfRangeException>(chunkSize < 1, "chunkSize");
+            Guard.Against<ArgumentException>(database == String.Empty, "database");
+
             _serializer = serializer;
             _database = database;
             _startupTimeStamp = DateTime.UtcNow;

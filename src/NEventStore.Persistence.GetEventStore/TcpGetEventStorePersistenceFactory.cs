@@ -13,19 +13,22 @@ namespace NEventStore.Persistence.GetEventStore
 
         private TcpGetEventStorePersistenceFactory(Func<IEventStoreConnection> connectionBuilder, ISerialize serializer)
         {
+            Guard.AgainstNull(connectionBuilder, "connectionBuilder");
+            Guard.AgainstNull(serializer, "serializer");
+
             _connectionBuilder = connectionBuilder;
             _serializer = serializer;
         }
 
-        public TcpGetEventStorePersistenceFactory(ConnectionSettings connectionSettings, IPEndPoint tcpEndPoint, string connectionName, ISerialize serializer)
+        public TcpGetEventStorePersistenceFactory(ConnectionSettings connectionSettings, IPEndPoint tcpEndPoint, 
+            string connectionName, ISerialize serializer)
             : this(() => EventStoreConnection.Create(connectionSettings, tcpEndPoint, connectionName), serializer)
         {
 
         }
 
         public TcpGetEventStorePersistenceFactory(ConnectionSettings connectionSettings, ClusterSettings clusterSettings,
-            string connectionName,
-            ISerialize serializer)
+            string connectionName, ISerialize serializer)
             : this(() => EventStoreConnection.Create(connectionSettings, clusterSettings, connectionName), serializer)
         {
             _serializer = serializer;

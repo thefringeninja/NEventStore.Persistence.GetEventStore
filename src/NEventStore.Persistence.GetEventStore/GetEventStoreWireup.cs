@@ -15,6 +15,8 @@ namespace NEventStore.Persistence.GetEventStore
 
         protected void WithPersisenceFactory(Func<ISerialize, IPersistenceFactory> factoryFactory)
         {
+            Guard.AgainstNull(factoryFactory, "factoryFactory");
+
             _factoryFactory = factoryFactory;
         }
     }

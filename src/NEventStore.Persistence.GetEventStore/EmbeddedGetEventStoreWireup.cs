@@ -12,19 +12,24 @@ namespace NEventStore.Persistence.GetEventStore
 
         public EmbeddedGetEventStoreWireup(Wireup inner) : base(inner)
         {
-            _chunkSize = TFConsts.ChunkSize;
+            WithChunkSizeOf(TFConsts.ChunkSize);
+
             WithPersisenceFactory(InMemory);
         }
 
         public EmbeddedGetEventStoreWireup WithDatabaseNamed(string database)
         {
+            Guard.AgainstNull(database, "database");
+
             _database = database;
+            
             return this;
         }
 
         public EmbeddedGetEventStoreWireup OnDisk(int? chunkSize)
         {
             WithPersisenceFactory(OnDisk);
+            
             return WithChunkSizeOf(chunkSize ?? _chunkSize);
         }
 
