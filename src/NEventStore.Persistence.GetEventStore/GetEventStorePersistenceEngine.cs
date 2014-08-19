@@ -219,11 +219,13 @@ namespace NEventStore.Persistence.GetEventStore
 
                 int start = 0;
 
-                StreamEventsSlice slice =
-                    _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true).Result;
+                bool isEndOfStream;
 
                 do
                 {
+                    StreamEventsSlice slice =
+                        _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true).Result;
+
                     foreach (ResolvedEvent resolved in slice.Events)
                     {
                         if (resolved.OriginalEvent.EventType.StartsWith("$")) continue;
@@ -240,7 +242,8 @@ namespace NEventStore.Persistence.GetEventStore
                         }
                     }
                     start += batchSize;
-                } while (false == slice.IsEndOfStream);
+                    isEndOfStream = slice.IsEndOfStream;
+                } while (false == isEndOfStream);
             }
 
             public IEnumerable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
