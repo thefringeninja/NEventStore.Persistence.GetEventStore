@@ -1,3 +1,5 @@
+using System.Reactive.Linq;
+
 namespace NEventStore.Persistence.GetEventStore
 {
     using System;
@@ -94,7 +96,7 @@ namespace NEventStore.Persistence.GetEventStore
             _disposed = true;
         }
 
-        public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
+        public IObservable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
         {
             ThrowWhenDisposed();
 
@@ -139,19 +141,20 @@ namespace NEventStore.Persistence.GetEventStore
 
         public bool IsDisposed { get { return _disposed; } }
 
-        public void Initialize()
+        public Task Initialize()
         {
             ThrowWhenDisposed();
             
-            if (Interlocked.Increment(ref _initialized) > 0) return;
+            if (Interlocked.Increment(ref _initialized) > 0) return Task.FromResult(false);;
 
             Logger.Debug(Messages.InitializingStorage);
 
             _connection = _buildConnection();
-            _connection.ConnectAsync().Wait();
+            
+            return _connection.ConnectAsync();
         }
 
-        public IEnumerable<ICommit> GetFrom(string checkpointToken = null)
+        public IObservable<ICommit> GetFrom(string checkpointToken = null)
         {
             ThrowWhenDisposed();
 
@@ -169,28 +172,34 @@ namespace NEventStore.Persistence.GetEventStore
             return GetEventStoreCheckpoint.Parse(checkpointToken);
         }
 
-        public void Purge()
+        public Task Purge()
         {
             ThrowWhenDisposed();
 
             Logger.Warn(Messages.PurgingStorage);
+
+            return Task.FromResult(false);
         }
 
-        public void Purge(string bucketId)
+        public Task Purge(string bucketId)
         {
             ThrowWhenDisposed();
 
             Logger.Warn(Messages.PurgingBucket, bucketId);
+
+            return Task.FromResult(false);
         }
 
-        public void Drop()
+        public Task Drop()
         {
             ThrowWhenDisposed();
 
             _dropAction();
+
+            return Task.FromResult(false);
         }
 
-        public void DeleteStream(string bucketId, string streamId)
+        public Task DeleteStream(string bucketId, string streamId)
         {
             ThrowWhenDisposed();
 
@@ -210,7 +219,7 @@ namespace NEventStore.Persistence.GetEventStore
                 _serializer = serializer;
             }
 
-            public IEnumerable<ICommit> ReadStream(string stream, int minRevision, int maxRevision)
+            public IObservable<ICommit> ReadStream(string stream, int minRevision, int maxRevision)
             {
                 Guard.AgainstNull(stream, "stream");
                 if (maxRevision < minRevision) throw new ArgumentOutOfRangeException("maxRevision");
@@ -221,32 +230,39 @@ namespace NEventStore.Persistence.GetEventStore
 
                 bool isEndOfStream;
 
-                do
+                return Observable.Create<ICommit>(async observer =>
                 {
-                    StreamEventsSlice slice =
-                        _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true).Result;
-
-                    foreach (ResolvedEvent resolved in slice.Events)
+                    do
                     {
-                        if (resolved.OriginalEvent.EventType.StartsWith("$")) continue;
-                        var dto = _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+                        StreamEventsSlice slice =
+                            await _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true);
 
-                        var commit = new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
-                            dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
-                            dto.Headers, dto.Events);
-
-                        if (dto.StreamRevision >= minRevision &&
-                            (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision)
+                        foreach (ResolvedEvent resolved in slice.Events)
                         {
-                            yield return commit;
+                            if (resolved.OriginalEvent.EventType.StartsWith("$")) continue;
+                            var dto =
+                                _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+
+                            var commit = new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
+                                dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
+                                dto.Headers, dto.Events);
+
+                            if (dto.StreamRevision >= minRevision &&
+                                (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision)
+                            {
+                                observer.OnNext(commit);
+                            }
                         }
-                    }
-                    start += batchSize;
-                    isEndOfStream = slice.IsEndOfStream;
-                } while (false == isEndOfStream);
+                        start += batchSize;
+                        isEndOfStream = slice.IsEndOfStream;
+                    } while (false == isEndOfStream);
+
+                    observer.OnCompleted();
+                });
+
             }
 
-            public IEnumerable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
+            public IObservable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
             {
                 if (checkpoint == null) throw new ArgumentNullException("checkpoint");
 
