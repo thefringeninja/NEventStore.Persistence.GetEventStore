@@ -243,12 +243,13 @@ namespace NEventStore.Persistence.GetEventStore
                             let commit = BuildCommit(dto, resolved)
                             where dto.StreamRevision >= minRevision &&
                                   (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
-                            select commit);
+                            select commit).ToList();
 
                         commits.ForEach(observer.OnNext);
 
                         start += batchSize;
-                        isEndOfStream = slice.IsEndOfStream;
+                        isEndOfStream = slice.IsEndOfStream 
+                            || commits.Any(commit => commit.StreamRevision > maxRevision);
                     } while (false == isEndOfStream);
 
                     observer.OnCompleted();
