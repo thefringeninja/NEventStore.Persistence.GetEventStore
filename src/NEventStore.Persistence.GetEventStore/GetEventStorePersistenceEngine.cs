@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reactive.Linq;
 
 namespace NEventStore.Persistence.GetEventStore
@@ -228,31 +229,24 @@ namespace NEventStore.Persistence.GetEventStore
 
                 int start = 0;
 
-                bool isEndOfStream;
-
                 return Observable.Create<ICommit>(async observer =>
                 {
+                    bool isEndOfStream;
                     do
                     {
                         StreamEventsSlice slice =
                             await _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true);
 
-                        foreach (ResolvedEvent resolved in slice.Events)
-                        {
-                            if (resolved.OriginalEvent.EventType.StartsWith("$")) continue;
-                            var dto =
-                                _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+                        var commits = (from resolved in slice.Events
+                            where false == IsSystemEvent(resolved)
+                            let dto = DeserializeEvent(resolved)
+                            let commit = BuildCommit(dto, resolved)
+                            where dto.StreamRevision >= minRevision &&
+                                  (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
+                            select commit);
 
-                            var commit = new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
-                                dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
-                                dto.Headers, dto.Events);
+                        commits.ForEach(observer.OnNext);
 
-                            if (dto.StreamRevision >= minRevision &&
-                                (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision)
-                            {
-                                observer.OnNext(commit);
-                            }
-                        }
                         start += batchSize;
                         isEndOfStream = slice.IsEndOfStream;
                     } while (false == isEndOfStream);
@@ -260,6 +254,23 @@ namespace NEventStore.Persistence.GetEventStore
                     observer.OnCompleted();
                 });
 
+            }
+
+            private static Commit BuildCommit(GetEventStoreCommitAttempt.Dto dto, ResolvedEvent resolved)
+            {
+                return new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
+                    dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
+                    dto.Headers, dto.Events);
+            }
+
+            private GetEventStoreCommitAttempt.Dto DeserializeEvent(ResolvedEvent resolved)
+            {
+                return _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+            }
+
+            private static bool IsSystemEvent(ResolvedEvent resolved)
+            {
+                return resolved.OriginalEvent.EventType.StartsWith("$");
             }
 
             public IObservable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
