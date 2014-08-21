@@ -6,7 +6,7 @@ properties {
     $output_directory = "$base_directory\output"
     $packages_directory = "$src_directory\packages"
     $sln_file = "$src_directory\NEventStore.Persistence.GetEventStore.sln"
-    $target_config = "Release"
+    $target_config = "Debug"
     $framework_version = "v4.0"
     $build_number = 0
     $assemblyInfoFilePath = "$src_directory\VersionAssemblyInfo.cs"
@@ -33,16 +33,14 @@ task UpdateVersion {
 }
 
 task Compile {
-	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /t:Clean }
+	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /t:Clean /p:OutDir=$output_directory}
 	exec { msbuild /nologo /verbosity:quiet $sln_file /p:Configuration=$target_config /p:TargetFrameworkVersion=v4.5.1 /p:OutDir=$output_directory }
 }
 
 task Test -precondition { $runPersistenceTests } {
 	"Persistence Tests"
 	EnsureDirectory $output_directory
-	Invoke-XUnit -Path $output_directory -TestSpec '*Persistence.GetEventStore.Tests.dll' `
-    -SummaryPath $output_directory\persistence_tests.xml `
-    -XUnitPath $xunit_path
+	RunXUnit -Spec '*Persistence.GetEventStore.Tests.dll'
 }
 
 task Package -depends Build, PackageNEventStore {
@@ -80,5 +78,11 @@ function EnsureDirectory {
 	if(!(test-path $directory))
 	{
 		mkdir $directory
+	}
+}
+function RunXUnit {
+	param([string]$Spec)
+	Get-ChildItem "$output_directory\$Spec" | % {
+		exec { &$xunit_path $_ }
 	}
 }
