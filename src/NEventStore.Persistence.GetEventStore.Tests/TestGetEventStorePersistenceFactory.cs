@@ -1,7 +1,8 @@
-﻿using EventStore.Common.Log;
-
-namespace NEventStore.Persistence.GetEventStore.Tests
+﻿namespace NEventStore.Persistence.GetEventStore.Tests
 {
+    using System.Net;
+    using EventStore.ClientAPI;
+
     public class TestGetEventStorePersistenceFactory : IPersistenceFactory
     {
         public TestGetEventStorePersistenceFactory()
@@ -10,7 +11,7 @@ namespace NEventStore.Persistence.GetEventStore.Tests
         }
         public IPersistStreams Build()
         {
-            return new EmbeddedGetEventStorePersistenceFactory().Build();
+            return EmbeddedGetEventStorePersistenceFactory.InMemory(new GetEventStoreJsonSerializer()).Build();
         }
     }
 

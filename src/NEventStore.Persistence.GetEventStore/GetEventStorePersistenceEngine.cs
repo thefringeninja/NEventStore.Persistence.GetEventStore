@@ -1,19 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
-using NEventStore.Serialization;
+using System.Linq;
+using System.Reactive.Linq;
 
 namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using EventStore.ClientAPI;
+    using EventStore.ClientAPI.Exceptions;
+    using NEventStore.Logging;
+    using NEventStore.Serialization;
+
     public class GetEventStorePersistenceEngine : IPersistStreams
     {
+        private static readonly ILog Logger = LogFactory.BuildLogger(typeof(GetEventStorePersistenceEngine));
+
         private readonly Func<IEventStoreConnection> _buildConnection;
         private readonly Action _dropAction;
         private readonly ISerialize _serializer;
         private IEventStoreConnection _connection;
         private int _initialized = -1;
+        private bool _disposed;
 
         public GetEventStorePersistenceEngine(Func<IEventStoreConnection> buildConnection, Action dropAction,
             ISerialize serializer)
@@ -23,52 +31,98 @@ namespace NEventStore.Persistence.GetEventStore
             _serializer = serializer;
         }
 
-        public void Dispose()
+        private void ThrowWhenDisposed()
         {
-            if (IsDisposed) return;
-            _connection.Close();
-            IsDisposed = true;
+            if (!_disposed)
+            {
+                return;
+            }
+
+            Logger.Warn(Messages.AlreadyDisposed);
+            throw new ObjectDisposedException(Messages.AlreadyDisposed);
         }
 
-        public IEnumerable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
+        private static Action<Task<WriteResult>> AppendToStreamContinuation(TaskCompletionSource<ICommit> source, CommitAttempt attempt)
         {
+            return task =>
+            {
+                if (task.Exception != null)
+                {
+                    task.Exception.Handle(e =>
+                    {
+                        if (e is WrongExpectedVersionException)
+                        {
+                            Logger.Info(Messages.ConcurrentWriteDetected);
+
+                            source.SetException(new ConcurrencyException(e.Message, e));
+                            return true;
+                        }
+
+                        return false;
+                    });
+                }
+                else
+                {
+                    // this should mean a duplicate write that was ignored by GES
+                    if (task.Result.LogPosition == Position.End)
+                    {
+                        Logger.Info(Messages.DuplicateCommit);
+                        source.SetException(new DuplicateCommitException());
+                    }
+                    else
+                    {
+                        Logger.Debug(Messages.CommitPersisted, attempt.CommitId);
+
+                        source.SetResult(new Commit(
+                            attempt.BucketId,
+                            attempt.StreamId,
+                            attempt.StreamRevision,
+                            attempt.CommitId,
+                            attempt.CommitSequence,
+                            attempt.CommitStamp,
+                            attempt.CommitSequence.ToString(),
+                            attempt.Headers,
+                            attempt.Events));
+                    }
+                }
+            };
+        }
+
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _connection.Close();
+            Logger.Debug(Messages.ShuttingDownPersistence);
+            _disposed = true;
+        }
+
+        public IObservable<ICommit> GetFrom(string bucketId, string streamId, int minRevision, int maxRevision)
+        {
+            ThrowWhenDisposed();
+
+            Logger.Debug(Messages.GettingAllCommitsBetween, streamId, minRevision, maxRevision);
+            
             var reader = new EventReader(_connection, _serializer);
 
             return reader.ReadStream(Format.EventStoreStreamId(bucketId, streamId), minRevision, maxRevision);
         }
 
-        public ICommit Commit(CommitAttempt attempt)
+        public Task<ICommit> Commit(CommitAttempt attempt)
         {
+            ThrowWhenDisposed();
+
+            Logger.Debug(Messages.AttemptingToCommit, attempt.Events.Count, attempt.StreamId, attempt.CommitSequence, attempt.BucketId);
+            
+            var source = new TaskCompletionSource<ICommit>();
+
             var getEventStoreCommit = new GetEventStoreCommitAttempt(attempt, _serializer);
 
-            try
-            {
-                _connection.AppendToStreamAsync(getEventStoreCommit.StreamId, getEventStoreCommit.ExpectedVersion,
-                    getEventStoreCommit).Wait();
-            }
-            catch (AggregateException ex)
-            {
-                ex.Handle(e =>
-                {
-                    if (e is WrongExpectedVersionException)
-                    {
-                        throw new ConcurrencyException(e.Message, e);
-                    }
+            _connection.AppendToStreamAsync(getEventStoreCommit.StreamId, getEventStoreCommit.ExpectedVersion,
+                getEventStoreCommit)
+                .ContinueWith(AppendToStreamContinuation(source, attempt));
 
-                    return false;
-                });
-            }
-
-            return new Commit(
-                attempt.BucketId,
-                attempt.StreamId,
-                attempt.StreamRevision,
-                attempt.CommitId,
-                attempt.CommitSequence,
-                attempt.CommitStamp,
-                attempt.CommitSequence.ToString(),
-                attempt.Headers,
-                attempt.Events);
+            return source.Task;
         }
 
         public ISnapshot GetSnapshot(string bucketId, string streamId, int maxRevision)
@@ -86,22 +140,27 @@ namespace NEventStore.Persistence.GetEventStore
             yield break;
         }
 
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed { get { return _disposed; } }
 
-        public void Initialize()
+        public Task Initialize()
         {
-            if (Interlocked.Increment(ref _initialized) > 0) return;
+            ThrowWhenDisposed();
+            
+            if (Interlocked.Increment(ref _initialized) > 0) return Task.FromResult(false);;
+
+            Logger.Debug(Messages.InitializingStorage);
+
             _connection = _buildConnection();
-            _connection.ConnectAsync().Wait();
+            
+            return _connection.ConnectAsync();
         }
 
-        public IEnumerable<ICommit> GetFrom(string bucketId, DateTime start)
+        public IObservable<ICommit> GetFrom(string checkpointToken = null)
         {
-            throw new NotSupportedException();
-        }
+            ThrowWhenDisposed();
 
-        public IEnumerable<ICommit> GetFrom(string checkpointToken = null)
-        {
+            Logger.Debug(Messages.GettingAllCommitsFromCheckpoint, checkpointToken);
+
             GetEventStoreCheckpoint checkpoint = GetEventStoreCheckpoint.Parse(checkpointToken);
 
             var reader = new EventReader(_connection, _serializer);
@@ -114,35 +173,39 @@ namespace NEventStore.Persistence.GetEventStore
             return GetEventStoreCheckpoint.Parse(checkpointToken);
         }
 
-        public IEnumerable<ICommit> GetFromTo(string bucketId, DateTime start, DateTime end)
+        public Task Purge()
         {
-            throw new NotSupportedException();
+            ThrowWhenDisposed();
+
+            Logger.Warn(Messages.PurgingStorage);
+
+            return Task.FromResult(false);
         }
 
-        public IEnumerable<ICommit> GetUndispatchedCommits()
+        public Task Purge(string bucketId)
         {
-            yield break;
+            ThrowWhenDisposed();
+
+            Logger.Warn(Messages.PurgingBucket, bucketId);
+
+            return Task.FromResult(false);
         }
 
-        public void MarkCommitAsDispatched(ICommit commit)
+        public Task Drop()
         {
-        }
+            ThrowWhenDisposed();
 
-        public void Purge()
-        {
-        }
-
-        public void Purge(string bucketId)
-        {
-        }
-
-        public void Drop()
-        {
             _dropAction();
+
+            return Task.FromResult(false);
         }
 
-        public void DeleteStream(string bucketId, string streamId)
+        public Task DeleteStream(string bucketId, string streamId)
         {
+            ThrowWhenDisposed();
+
+            Logger.Warn(Messages.DeletingStream, streamId, bucketId);
+
             throw new NotImplementedException();
         }
 
@@ -157,7 +220,7 @@ namespace NEventStore.Persistence.GetEventStore
                 _serializer = serializer;
             }
 
-            public IEnumerable<ICommit> ReadStream(string stream, int minRevision, int maxRevision)
+            public IObservable<ICommit> ReadStream(string stream, int minRevision, int maxRevision)
             {
                 Guard.AgainstNull(stream, "stream");
                 if (maxRevision < minRevision) throw new ArgumentOutOfRangeException("maxRevision");
@@ -166,31 +229,52 @@ namespace NEventStore.Persistence.GetEventStore
 
                 int start = 0;
 
-                StreamEventsSlice slice =
-                    _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true).Result;
-
-                do
+                return Observable.Create<ICommit>(async observer =>
                 {
-                    foreach (ResolvedEvent resolved in slice.Events)
+                    bool isEndOfStream;
+                    do
                     {
-                        if (resolved.OriginalEvent.EventType.StartsWith("$")) continue;
-                        var dto = _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+                        StreamEventsSlice slice =
+                            await _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true);
 
-                        var commit = new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
-                            dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
-                            dto.Headers, dto.Events);
+                        var commits = (from resolved in slice.Events
+                            where false == IsSystemEvent(resolved)
+                            let dto = DeserializeEvent(resolved)
+                            let commit = BuildCommit(dto, resolved)
+                            where dto.StreamRevision >= minRevision &&
+                                  (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
+                            select commit).ToList();
 
-                        if (dto.StreamRevision >= minRevision &&
-                            (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision)
-                        {
-                            yield return commit;
-                        }
-                    }
-                    start += batchSize;
-                } while (false == slice.IsEndOfStream);
+                        commits.ForEach(observer.OnNext);
+
+                        start += batchSize;
+                        isEndOfStream = slice.IsEndOfStream 
+                            || commits.Any(commit => commit.StreamRevision > maxRevision);
+                    } while (false == isEndOfStream);
+
+                    observer.OnCompleted();
+                });
+
             }
 
-            public IEnumerable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
+            private static Commit BuildCommit(GetEventStoreCommitAttempt.Dto dto, ResolvedEvent resolved)
+            {
+                return new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
+                    dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
+                    dto.Headers, dto.Events);
+            }
+
+            private GetEventStoreCommitAttempt.Dto DeserializeEvent(ResolvedEvent resolved)
+            {
+                return _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+            }
+
+            private static bool IsSystemEvent(ResolvedEvent resolved)
+            {
+                return resolved.OriginalEvent.EventType.StartsWith("$");
+            }
+
+            public IObservable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
             {
                 if (checkpoint == null) throw new ArgumentNullException("checkpoint");
 

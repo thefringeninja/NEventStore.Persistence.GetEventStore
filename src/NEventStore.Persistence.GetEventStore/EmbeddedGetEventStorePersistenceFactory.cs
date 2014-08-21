@@ -1,38 +1,58 @@
-﻿using System;
-using System.IO;
-using System.Net;
-using System.Threading;
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Embedded;
-using EventStore.Common.Options;
-using EventStore.Common.Utils;
-using EventStore.Core;
-using EventStore.Core.Authentication;
-using EventStore.Core.Bus;
-using EventStore.Core.Cluster.Settings;
-using EventStore.Core.Messages;
-using EventStore.Core.Messaging;
-using EventStore.Core.Services.Gossip;
-using EventStore.Core.Services.Monitoring;
-using EventStore.Core.TransactionLog.Checkpoint;
-using EventStore.Core.TransactionLog.Chunks;
-using EventStore.Core.TransactionLog.FileNamingStrategy;
-using EventStore.Core.Util;
-using EventStore.Projections.Core.Messages;
-using EventStore.Projections.Core.Services.Processing;
-using NEventStore.Serialization;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.IO;
+    using System.Net;
+    using System.Threading;
+    using EventStore.ClientAPI;
+    using EventStore.ClientAPI.Embedded;
+    using EventStore.Common.Options;
+    using EventStore.Common.Utils;
+    using EventStore.Core;
+    using EventStore.Core.Authentication;
+    using EventStore.Core.Bus;
+    using EventStore.Core.Cluster.Settings;
+    using EventStore.Core.Messages;
+    using EventStore.Core.Messaging;
+    using EventStore.Core.Services.Gossip;
+    using EventStore.Core.Services.Monitoring;
+    using EventStore.Core.TransactionLog.Checkpoint;
+    using EventStore.Core.TransactionLog.Chunks;
+    using EventStore.Core.TransactionLog.FileNamingStrategy;
+    using EventStore.Core.Util;
+    using EventStore.Projections.Core.Messages;
+    using EventStore.Projections.Core.Services.Processing;
+    using NEventStore.Serialization;
+
     public class EmbeddedGetEventStorePersistenceFactory : IPersistenceFactory
     {
         private readonly string _database;
         private readonly DateTime _startupTimeStamp;
+        private readonly ISerialize _serializer;
+        private readonly bool _inMemDb;
+        private readonly int _chunkSize;
 
-        public EmbeddedGetEventStorePersistenceFactory(string database = null)
+        private EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, int chunkSize = TFConsts.ChunkSize, string database = null, bool inMemDb = false)
         {
+            Guard.AgainstNull(serializer, "serializer");
+            Guard.Against<ArgumentOutOfRangeException>(chunkSize < 1, "chunkSize");
+            Guard.Against<ArgumentException>(database == String.Empty, "database");
+
+            _serializer = serializer;
             _database = database;
             _startupTimeStamp = DateTime.UtcNow;
+            _inMemDb = inMemDb;
+            _chunkSize = chunkSize;
+        }
+
+        public static EmbeddedGetEventStorePersistenceFactory OnDisk(ISerialize serializer, string database = null, int chunkSize = TFConsts.ChunkSize)
+        {
+            return new EmbeddedGetEventStorePersistenceFactory(serializer, chunkSize, database);
+        }
+
+        public static EmbeddedGetEventStorePersistenceFactory InMemory(ISerialize serializer)
+        {
+            return new EmbeddedGetEventStorePersistenceFactory(serializer, inMemDb: true);
         }
 
         public IPersistStreams Build()
@@ -61,7 +81,7 @@ namespace NEventStore.Persistence.GetEventStore
                 {
                     Directory.Delete(dbPath, true);
                 }
-            }, new JsonSerializer());
+            }, _serializer);
         }
 
         private Func<IEventStoreConnection> BuildConnectionBuilder(ClusterVNode node,
@@ -105,7 +125,7 @@ namespace NEventStore.Persistence.GetEventStore
         {
             ClusterVNodeSettings clusterVNodeSettings = CreateClusterVNodeSettings();
 
-            var node = new ClusterVNode(new TFChunkDb(CreateDbConfig(dbPath, -1, TFConsts.ChunksCacheSize, true)),
+            var node = new ClusterVNode(new TFChunkDb(CreateDbConfig(dbPath, _chunkSize, -1, TFConsts.ChunksCacheSize, _inMemDb)),
                 clusterVNodeSettings, new KnownEndpointGossipSeedSource(new IPEndPoint[0]), true,
                 Opts.MaxMemtableSizeDefault, projections);
             return node;
@@ -116,13 +136,12 @@ namespace NEventStore.Persistence.GetEventStore
             return new ಠ_ಠProjectionsSubsystem(3, ProjectionType.All);
         }
 
-        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int cachedChunks, long chunksCacheSize,
-            bool inMemDb)
+        protected static TFChunkDbConfig CreateDbConfig(string dbPath, int chunkSize, int cachedChunks, long chunksCacheSize, bool inMemDb)
         {
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint writerChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint chaserChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint epochChk;
-            EventStore.Core.TransactionLog.Checkpoint.ICheckpoint truncateChk;
+            ICheckpoint writerChk;
+            ICheckpoint chaserChk;
+            ICheckpoint epochChk;
+            ICheckpoint truncateChk;
 
             if (inMemDb)
             {
@@ -159,11 +178,11 @@ namespace NEventStore.Persistence.GetEventStore
                 }
             }
             long cache = cachedChunks >= 0
-                ? cachedChunks*(long) (TFConsts.ChunkSize + ChunkHeader.Size + ChunkFooter.Size)
+                ? cachedChunks*(long) (chunkSize + ChunkHeader.Size + ChunkFooter.Size)
                 : chunksCacheSize;
             var nodeConfig = new TFChunkDbConfig(dbPath,
                 new VersionedPatternFileNamingStrategy(dbPath, "chunk-"),
-                TFConsts.ChunkSize,
+                chunkSize,
                 cache,
                 writerChk,
                 chaserChk,

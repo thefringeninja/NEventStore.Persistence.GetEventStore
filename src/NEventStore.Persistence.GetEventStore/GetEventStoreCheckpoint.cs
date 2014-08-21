@@ -1,7 +1,7 @@
-﻿using System;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+
     internal class GetEventStoreCheckpoint : ICheckpoint
     {
         private readonly int _eventNumber;

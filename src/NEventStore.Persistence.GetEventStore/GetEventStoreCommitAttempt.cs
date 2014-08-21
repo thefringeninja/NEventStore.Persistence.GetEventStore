@@ -1,13 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime.Serialization;
-using EventStore.ClientAPI;
-using NEventStore.Serialization;
-
 namespace NEventStore.Persistence.GetEventStore
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Linq;
+    using System.Runtime.Serialization;
+    using EventStore.ClientAPI;
+    using NEventStore.Serialization;
+
     internal class GetEventStoreCommitAttempt
     {
         internal const string EventType = "NEventStoreCommit";
