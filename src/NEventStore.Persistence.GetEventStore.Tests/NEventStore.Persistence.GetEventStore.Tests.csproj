@@ -62,9 +62,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.Common, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="EventStore.ClientAPI.Embedded, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\lib\GetEventStore\EventStore.Common.dll</HintPath>
+      <HintPath>..\..\lib\GetEventStore\EventStore.ClientAPI.Embedded.dll</HintPath>
     </Reference>
     <Reference Include="FluentAssertions, Version=3.1.229.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

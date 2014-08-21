@@ -60,20 +60,12 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EventStore.ClientAPI">
+    <Reference Include="EventStore.ClientAPI, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\lib\GetEventStore\EventStore.ClientAPI.dll</HintPath>
     </Reference>
     <Reference Include="EventStore.ClientAPI.Embedded">
       <HintPath>..\..\lib\GetEventStore\EventStore.ClientAPI.Embedded.dll</HintPath>
-    </Reference>
-    <Reference Include="EventStore.Common">
-      <HintPath>..\..\lib\GetEventStore\EventStore.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="EventStore.Core">
-      <HintPath>..\..\lib\GetEventStore\EventStore.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="EventStore.Projections.Core">
-      <HintPath>..\..\lib\GetEventStore\EventStore.Projections.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
