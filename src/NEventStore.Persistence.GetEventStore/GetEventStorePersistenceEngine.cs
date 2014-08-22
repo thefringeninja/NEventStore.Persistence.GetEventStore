@@ -240,9 +240,8 @@ namespace NEventStore.Persistence.GetEventStore
                         var commits = (from resolved in slice.Events
                             where false == IsSystemEvent(resolved)
                             let dto = DeserializeEvent(resolved)
+                            where dto.StreamRevision >= minRevision && (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
                             let commit = BuildCommit(dto, resolved)
-                            where dto.StreamRevision >= minRevision &&
-                                  (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
                             select commit).ToList();
 
                         commits.ForEach(observer.OnNext);
