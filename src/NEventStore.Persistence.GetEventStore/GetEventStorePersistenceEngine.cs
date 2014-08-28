@@ -92,8 +92,13 @@ namespace NEventStore.Persistence.GetEventStore
         public void Dispose()
         {
             if (_disposed) return;
-            _connection.Close();
-            Logger.Debug(Messages.ShuttingDownPersistence);
+            
+            if (_connection != null)
+            {
+                Logger.Debug(Messages.ShuttingDownPersistence);
+                _connection.Close();
+            }
+            
             _disposed = true;
         }
 
