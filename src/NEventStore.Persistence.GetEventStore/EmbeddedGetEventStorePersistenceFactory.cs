@@ -92,15 +92,15 @@
                 var wait = new ManualResetEventSlim(false);
 
                 node.MainBus.Subscribe(
-                    new AdHocHandler<UserManagementMessage.UserManagementServiceInitialized>(m => wait.Set()));
+                    new AdHocHandler<ProjectionManagementMessage.RequestSystemProjections>(m => wait.Set()));
 
                 node.Start();
-
-                StartProjections(projectionsSubsystem.MainQueue);
 
                 if (!wait.Wait(20000))
                     throw new TimeoutException("Node has not started in 20 seconds.");
 
+                StartProjections(projectionsSubsystem.MainQueue);
+                
                 return EmbeddedEventStoreConnection.Create(node);
             };
         }
@@ -108,7 +108,13 @@
         private void StartProjection(string projection, IPublisher projectionsQueue)
         {
             projectionsQueue.Publish(new ProjectionManagementMessage.Command.Enable(
-                new NoopEnvelope(), projection, ProjectionManagementMessage.RunAs.System));
+                new CallbackEnvelope(message =>
+                {
+                    if (message is ProjectionManagementMessage.NotFound)
+                    {
+                        StartProjection(projection, projectionsQueue);
+                    }
+                }), projection, ProjectionManagementMessage.RunAs.System));
         }
 
         private void StartProjections(IPublisher projectionsQueue)
