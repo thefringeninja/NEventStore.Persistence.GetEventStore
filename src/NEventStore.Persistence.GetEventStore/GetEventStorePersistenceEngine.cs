@@ -130,9 +130,9 @@ namespace NEventStore.Persistence.GetEventStore
             throw new NotSupportedException();
         }
 
-        public bool AddSnapshot(ISnapshot snapshot)
+        public Task<bool> AddSnapshot(ISnapshot snapshot)
         {
-            return false;
+            throw new NotSupportedException();
         }
 
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
