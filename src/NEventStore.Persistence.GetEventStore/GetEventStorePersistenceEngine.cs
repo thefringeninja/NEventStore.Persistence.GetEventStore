@@ -301,7 +301,7 @@ namespace NEventStore.Persistence.GetEventStore
             private static Commit BuildCommit(GetEventStoreCommitAttempt.Dto dto, ResolvedEvent resolved)
             {
                 return new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
-                    dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
+                    dto.CommitSequence, dto.CommitStamp, (resolved.OriginalEventNumber + 1).ToString(),
                     dto.Headers, dto.Events);
             }
 
