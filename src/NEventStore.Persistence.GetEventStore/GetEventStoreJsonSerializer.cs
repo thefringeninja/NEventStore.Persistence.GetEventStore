@@ -8,19 +8,25 @@
 
     public class GetEventStoreJsonSerializer : ISerialize
     {
+        public delegate void Configure(JsonSerializerSettings settings);
+
         private static readonly byte[] BOM = Encoding.UTF8.GetPreamble();
 
         private readonly JsonSerializerSettings _serializerSettings;
 
-        public GetEventStoreJsonSerializer()
+        public GetEventStoreJsonSerializer(Configure configure = null)
         {
             _serializerSettings = new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Auto,
                 DefaultValueHandling = DefaultValueHandling.Ignore,
-                NullValueHandling = NullValueHandling.Ignore,
-                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
+                NullValueHandling = NullValueHandling.Ignore
             };
+
+            if (configure != null)
+            {
+                configure(_serializerSettings);
+            }
         }
         public void Serialize<T>(Stream output, T graph)
         {

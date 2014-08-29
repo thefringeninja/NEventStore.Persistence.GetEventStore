@@ -1,5 +1,4 @@
-﻿
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
     using System;
     using NEventStore.Serialization;
@@ -7,10 +6,11 @@ namespace NEventStore.Persistence.GetEventStore
     public abstract class GetEventStoreWireup : PersistenceWireup
     {
         private Func<ISerialize, IPersistenceFactory> _factoryFactory;
+        protected GetEventStoreJsonSerializer.Configure _configure;
 
         protected GetEventStoreWireup(Wireup inner) : base(inner)
         {
-            Container.Register(container => _factoryFactory(new GetEventStoreJsonSerializer()).Build());
+            Container.Register(container => _factoryFactory(new GetEventStoreJsonSerializer(_configure)).Build());
         }
 
         protected void WithPersisenceFactory(Func<ISerialize, IPersistenceFactory> factoryFactory)
@@ -18,6 +18,12 @@ namespace NEventStore.Persistence.GetEventStore
             Guard.AgainstNull(factoryFactory, "factoryFactory");
 
             _factoryFactory = factoryFactory;
+        }
+
+        public GetEventStoreWireup CustomizeJsonSerailizationWith(GetEventStoreJsonSerializer.Configure configure)
+        {
+            _configure = configure;
+            return this;
         }
     }
 }
