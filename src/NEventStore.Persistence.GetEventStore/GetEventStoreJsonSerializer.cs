@@ -8,6 +8,8 @@
 
     public class GetEventStoreJsonSerializer : ISerialize
     {
+        private static readonly byte[] BOM = Encoding.UTF8.GetPreamble();
+
         private readonly JsonSerializerSettings _serializerSettings;
 
         public GetEventStoreJsonSerializer()
@@ -17,6 +19,7 @@
                 TypeNameHandling = TypeNameHandling.Auto,
                 DefaultValueHandling = DefaultValueHandling.Ignore,
                 NullValueHandling = NullValueHandling.Ignore,
+                ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor
             };
         }
         public void Serialize<T>(Stream output, T graph)
@@ -32,9 +35,21 @@
 
             input.Read(buffer, 0, buffer.Length);
 
-            var raw = Encoding.UTF8.GetString(buffer);
+            var raw = GetStringWithoutBOM<T>(buffer);
 
             return JsonConvert.DeserializeObject<T>(raw, _serializerSettings);
+        }
+
+        private static string GetStringWithoutBOM<T>(byte[] buffer)
+        {
+            var start = HasBOM(buffer) ? 3 : 0;
+
+            return Encoding.UTF8.GetString(buffer, start, buffer.Length - start);
+        }
+
+        private static bool HasBOM(byte[] buffer)
+        {
+            return BOM[0] == buffer[0] && BOM[1] == buffer[1] && BOM[2] == buffer[2];
         }
     }
 }
