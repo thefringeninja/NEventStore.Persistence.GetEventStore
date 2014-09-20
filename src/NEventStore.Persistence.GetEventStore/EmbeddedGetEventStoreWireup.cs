@@ -51,7 +51,7 @@ namespace NEventStore.Persistence.GetEventStore
 
         private EmbeddedGetEventStorePersistenceFactory OnDisk(ISerialize serializer)
         {
-            return EmbeddedGetEventStorePersistenceFactory.OnDisk(serializer, _database, _chunkSize);
+            return EmbeddedGetEventStorePersistenceFactory.OnDisk(serializer, _database);
         }
 
         private EmbeddedGetEventStorePersistenceFactory InMemory(ISerialize serializer)
