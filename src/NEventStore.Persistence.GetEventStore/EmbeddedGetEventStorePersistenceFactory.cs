@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using EventStore.Core.Services.TimerService;
 
 namespace NEventStore.Persistence.GetEventStore
 {
@@ -21,13 +22,15 @@ namespace NEventStore.Persistence.GetEventStore
         private readonly ISerialize _serializer;
         private readonly ClusterVNode _node;
         private readonly ಠ_ಠProjectionsSubsystem _projections;
-
-        private EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, EmbeddedVNodeBuilder builder, Func<EmbeddedVNodeBuilder, EmbeddedVNodeBuilder> customize = null)
+        private readonly Action _cleanup;
+        internal EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, EmbeddedVNodeBuilder builder, Func<EmbeddedVNodeBuilder, EmbeddedVNodeBuilder> customize = null, Action cleanup = null)
         {
             Guard.AgainstNull(serializer, "serializer");
             Guard.AgainstNull(builder, "builder");
 
             customize = customize ?? (_ => _);
+            
+            _cleanup = cleanup ?? (() => { });
 
             _projections = CreateProjectionsSubsystem();
 
@@ -38,33 +41,18 @@ namespace NEventStore.Persistence.GetEventStore
             _node = builder;
         }
 
-        private static EmbeddedVNodeBuilder SingleNode()
-        {
-            var ipEndPoint = new IPEndPoint(IPAddress.None, 0);
-            return EmbeddedVNodeBuilder
-                .AsSingleNode()
-                .WithInternalTcpOn(ipEndPoint)
-                .WithInternalHttpOn(ipEndPoint);
-        }
-
-        public static EmbeddedGetEventStorePersistenceFactory OnDisk(ISerialize serializer, string database = null)
-        {
-            Guard.Against<ArgumentException>(database == String.Empty, "database");
-            return new EmbeddedGetEventStorePersistenceFactory(serializer, SingleNode()
-                .RunOnDisk(ResolveDbPath(database, DateTime.UtcNow)));
-        }
-
-        public static EmbeddedGetEventStorePersistenceFactory InMemory(ISerialize serializer)
-        {
-            return new EmbeddedGetEventStorePersistenceFactory(serializer, SingleNode()
-                .RunInMemory());
-        }
-
         public IPersistStreams Build()
         {
-            var connectionBuilder = BuildConnectionBuilder(_node, _projections);
+            var buildConnection = BuildConnectionBuilder(_node, _projections);
 
-            return new GetEventStorePersistenceEngine(connectionBuilder, () =>
+            var dropAction = BuildDropAction();
+
+            return new GetEventStorePersistenceEngine(buildConnection, dropAction, _serializer);
+        }
+
+        private Action BuildDropAction()
+        {
+            return () =>
             {
                 var wait = new ManualResetEventSlim(false);
 
@@ -75,7 +63,9 @@ namespace NEventStore.Persistence.GetEventStore
 
                 if (!wait.Wait(20000))
                     throw new TimeoutException("Node has not shut down in 20 seconds.");
-            }, _serializer);
+
+                _cleanup();
+            };
         }
 
         private Func<IEventStoreConnection> BuildConnectionBuilder(ClusterVNode node,
@@ -124,15 +114,6 @@ namespace NEventStore.Persistence.GetEventStore
         private static ಠ_ಠProjectionsSubsystem CreateProjectionsSubsystem()
         {
             return new ಠ_ಠProjectionsSubsystem(3, ProjectionType.All);
-        }
-        
-        private static string ResolveDbPath(string optionsPath, DateTime startupTimeStamp)
-        {
-            if (String.IsNullOrEmpty(optionsPath))
-                optionsPath = Path.Combine(Path.GetTempPath(),
-                    "EventStore",
-                    string.Format("{0:yyyy-MM-dd_HH.mm.ss.ffffff}-EmbeddedNode", startupTimeStamp));
-            return Path.GetFullPath(optionsPath);
         }
     }
 }

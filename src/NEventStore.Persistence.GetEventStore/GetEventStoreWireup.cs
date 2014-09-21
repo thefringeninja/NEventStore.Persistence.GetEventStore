@@ -6,7 +6,7 @@
     public abstract class GetEventStoreWireup : PersistenceWireup
     {
         private Func<ISerialize, IPersistenceFactory> _factoryFactory;
-        protected GetEventStoreJsonSerializer.Configure _configure;
+        private GetEventStoreJsonSerializer.Configure _configure;
 
         protected GetEventStoreWireup(Wireup inner) : base(inner)
         {
