@@ -1,10 +1,6 @@
-﻿using System.Net;
-using EventStore.Core.Services.TimerService;
-
-namespace NEventStore.Persistence.GetEventStore
+﻿namespace NEventStore.Persistence.GetEventStore
 {
     using System;
-    using System.IO;
     using System.Threading;
     using EventStore.ClientAPI;
     using EventStore.ClientAPI.Embedded;
@@ -21,9 +17,15 @@ namespace NEventStore.Persistence.GetEventStore
     {
         private readonly ISerialize _serializer;
         private readonly ClusterVNode _node;
+        private readonly Action<ClusterVNode> _startup;
         private readonly ಠ_ಠProjectionsSubsystem _projections;
         private readonly Action _cleanup;
-        internal EmbeddedGetEventStorePersistenceFactory(ISerialize serializer, EmbeddedVNodeBuilder builder, Func<EmbeddedVNodeBuilder, EmbeddedVNodeBuilder> customize = null, Action cleanup = null)
+        internal EmbeddedGetEventStorePersistenceFactory(
+            ISerialize serializer, 
+            EmbeddedVNodeBuilder builder, 
+            Func<EmbeddedVNodeBuilder, EmbeddedVNodeBuilder> customize = null, 
+            Action<ClusterVNode> startup = null, 
+            Action cleanup = null)
         {
             Guard.AgainstNull(serializer, "serializer");
             Guard.AgainstNull(builder, "builder");
@@ -39,11 +41,12 @@ namespace NEventStore.Persistence.GetEventStore
             _serializer = serializer;
             
             _node = builder;
+            _startup = startup;
         }
 
         public IPersistStreams Build()
         {
-            var buildConnection = BuildConnectionBuilder(_node, _projections);
+            var buildConnection = BuildConnectionBuilder();
 
             var dropAction = BuildDropAction();
 
@@ -68,28 +71,29 @@ namespace NEventStore.Persistence.GetEventStore
             };
         }
 
-        private Func<IEventStoreConnection> BuildConnectionBuilder(ClusterVNode node,
-            ಠ_ಠProjectionsSubsystem projectionsSubsystem)
+        private Func<IEventStoreConnection> BuildConnectionBuilder()
         {
             return () =>
             {
                 var wait = new ManualResetEventSlim(false);
 
-                node.MainBus.Subscribe(
+                _node.MainBus.Subscribe(
                     new AdHocHandler<ProjectionManagementMessage.RequestSystemProjections>(m => wait.Set()));
 
-                node.Start();
+                _node.Start();
 
                 if (!wait.Wait(20000))
                     throw new TimeoutException("Node has not started in 20 seconds.");
 
-                StartProjections(projectionsSubsystem.MainQueue);
+                StartProjections(_projections.MainQueue);
+
+                _startup(_node);
                 
-                return EmbeddedEventStoreConnection.Create(node);
+                return EmbeddedEventStoreConnection.Create(_node);
             };
         }
 
-        private void StartProjection(string projection, IPublisher projectionsQueue)
+        private static void StartProjection(string projection, IPublisher projectionsQueue)
         {
             projectionsQueue.Publish(new ProjectionManagementMessage.Command.Enable(
                 new CallbackEnvelope(message =>
@@ -101,7 +105,7 @@ namespace NEventStore.Persistence.GetEventStore
                 }), projection, ProjectionManagementMessage.RunAs.System));
         }
 
-        private void StartProjections(IPublisher projectionsQueue)
+        private static void StartProjections(IPublisher projectionsQueue)
         {
             StartProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                 projectionsQueue);
