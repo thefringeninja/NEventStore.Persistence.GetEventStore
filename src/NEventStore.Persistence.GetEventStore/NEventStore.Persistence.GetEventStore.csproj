@@ -133,6 +133,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="GetEventStorePersistenceEngine.EventStoreConnection.cs">
+    	<DependentUpon>GetEventStorePersistenceEngine.cs</DependentUpon>
+    </Compile>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -12,7 +12,7 @@ namespace NEventStore.Persistence.GetEventStore
     using NEventStore.Logging;
     using NEventStore.Serialization;
 
-    public class GetEventStorePersistenceEngine : IPersistStreams
+    public partial class GetEventStorePersistenceEngine : IPersistStreams, IEventStoreConnection
     {
         private static readonly ILog Logger = LogFactory.BuildLogger(typeof(GetEventStorePersistenceEngine));
 
