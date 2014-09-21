@@ -1,4 +1,6 @@
-﻿namespace NEventStore.Persistence.GetEventStore
+﻿using EventStore.Core.Data;
+
+namespace NEventStore.Persistence.GetEventStore
 {
     using System;
     using System.Threading;
@@ -7,7 +9,6 @@
     using EventStore.Common.Options;
     using EventStore.Core;
     using EventStore.Core.Bus;
-    using EventStore.Core.Messages;
     using EventStore.Core.Messaging;
     using EventStore.Projections.Core.Messages;
     using EventStore.Projections.Core.Services.Processing;
@@ -59,9 +60,13 @@
             {
                 var wait = new ManualResetEventSlim(false);
 
-                _node.MainBus.Subscribe(
-                    new AdHocHandler<SystemMessage.BecomeShutdown>(m => wait.Set()));
-
+                _node.NodeStatusChanged += (sender, args) =>
+                {
+                    if (args.NewVNodeState == VNodeState.Shutdown)
+                    {
+                        wait.Set();
+                    }
+                };
                 _node.Stop();
 
                 if (!wait.Wait(20000))
@@ -77,8 +82,13 @@
             {
                 var wait = new ManualResetEventSlim(false);
 
-                _node.MainBus.Subscribe(
-                    new AdHocHandler<ProjectionManagementMessage.RequestSystemProjections>(m => wait.Set()));
+                _node.NodeStatusChanged += (sender, args) =>
+                {
+                    if (args.NewVNodeState == VNodeState.Master)
+                    {
+                        wait.Set();
+                    }
+                };
 
                 _node.Start();
 
@@ -109,7 +119,8 @@
         {
             StartProjection(ProjectionNamesBuilder.StandardProjections.EventByCategoryStandardProjection,
                 projectionsQueue);
-            StartProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, projectionsQueue);
+            StartProjection(ProjectionNamesBuilder.StandardProjections.EventByTypeStandardProjection, 
+                projectionsQueue);
             StartProjection(ProjectionNamesBuilder.StandardProjections.StreamByCategoryStandardProjection,
                 projectionsQueue);
             StartProjection(ProjectionNamesBuilder.StandardProjections.StreamsStandardProjection, projectionsQueue);
