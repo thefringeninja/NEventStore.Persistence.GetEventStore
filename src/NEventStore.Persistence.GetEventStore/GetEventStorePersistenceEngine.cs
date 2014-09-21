@@ -92,8 +92,13 @@ namespace NEventStore.Persistence.GetEventStore
         public void Dispose()
         {
             if (_disposed) return;
-            _connection.Close();
-            Logger.Debug(Messages.ShuttingDownPersistence);
+            
+            if (_connection != null)
+            {
+                Logger.Debug(Messages.ShuttingDownPersistence);
+                _connection.Close();
+            }
+            
             _disposed = true;
         }
 
@@ -130,9 +135,9 @@ namespace NEventStore.Persistence.GetEventStore
             throw new NotSupportedException();
         }
 
-        public bool AddSnapshot(ISnapshot snapshot)
+        public Task<bool> AddSnapshot(ISnapshot snapshot)
         {
-            return false;
+            throw new NotSupportedException();
         }
 
         public IEnumerable<IStreamHead> GetStreamsToSnapshot(string bucketId, int maxThreshold)
@@ -223,7 +228,8 @@ namespace NEventStore.Persistence.GetEventStore
             public IObservable<ICommit> ReadStream(string stream, int minRevision, int maxRevision)
             {
                 Guard.AgainstNull(stream, "stream");
-                if (maxRevision < minRevision) throw new ArgumentOutOfRangeException("maxRevision");
+                minRevision = Math.Max(minRevision, 0);
+                Guard.Against<ArgumentOutOfRangeException>(maxRevision < minRevision, "maxRevision");
 
                 const int batchSize = 512;
 
@@ -240,44 +246,73 @@ namespace NEventStore.Persistence.GetEventStore
                         var commits = (from resolved in slice.Events
                             where false == IsSystemEvent(resolved)
                             let dto = DeserializeEvent(resolved)
-                            where dto.StreamRevision >= minRevision && (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision
+                            where SingleStreamIsInRange(dto, minRevision, maxRevision)
                             let commit = BuildCommit(dto, resolved)
                             select commit).ToList();
 
                         commits.ForEach(observer.OnNext);
 
                         start += batchSize;
-                        isEndOfStream = slice.IsEndOfStream 
-                            || commits.Any(commit => commit.StreamRevision > maxRevision);
+                        isEndOfStream = slice.IsEndOfStream
+                                        || commits.Any(commit => commit.StreamRevision > maxRevision);
                     } while (false == isEndOfStream);
 
                     observer.OnCompleted();
                 });
+            }
 
+            public IObservable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
+            {
+                const int batchSize = 512;
+
+                var start = ((int?)checkpoint ?? 0);
+
+                const string stream = "$et-" + GetEventStoreCommitAttempt.EventType;
+
+                return Observable.Create<ICommit>(async observer =>
+                {
+                    bool isEndOfStream;
+                    do
+                    {
+                        StreamEventsSlice slice =
+                            await _connection.ReadStreamEventsForwardAsync(stream, start, batchSize, true);
+
+                        var commits = (from resolved in slice.Events
+                            where false == IsSystemEvent(resolved)
+                            let dto = DeserializeEvent(resolved)
+                            let commit = BuildCommit(dto, resolved)
+                            select commit).ToList();
+
+                        commits.ForEach(observer.OnNext);
+
+                        start += batchSize;
+                        isEndOfStream = slice.IsEndOfStream;
+                    } while (false == isEndOfStream);
+
+                    observer.OnCompleted();
+                });
+            }
+
+            private static bool SingleStreamIsInRange(GetEventStoreCommitAttempt.Dto dto, int minRevision, int maxRevision)
+            {
+                return dto.StreamRevision >= minRevision && (dto.StreamRevision - dto.Events.Count + 1) <= maxRevision;
             }
 
             private static Commit BuildCommit(GetEventStoreCommitAttempt.Dto dto, ResolvedEvent resolved)
             {
                 return new Commit(dto.BucketId, dto.StreamId, dto.StreamRevision, dto.CommitId,
-                    dto.CommitSequence, dto.CommitStamp, resolved.OriginalEventNumber.ToString(),
+                    dto.CommitSequence, dto.CommitStamp, (resolved.OriginalEventNumber + 1).ToString(),
                     dto.Headers, dto.Events);
             }
 
             private GetEventStoreCommitAttempt.Dto DeserializeEvent(ResolvedEvent resolved)
             {
-                return _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.OriginalEvent.Data);
+                return _serializer.Deserialize<GetEventStoreCommitAttempt.Dto>(resolved.Event.Data);
             }
 
             private static bool IsSystemEvent(ResolvedEvent resolved)
             {
-                return resolved.OriginalEvent.EventType.StartsWith("$");
-            }
-
-            public IObservable<ICommit> ReadAllFromCheckpoint(GetEventStoreCheckpoint checkpoint)
-            {
-                if (checkpoint == null) throw new ArgumentNullException("checkpoint");
-
-                return ReadStream("$et-" + GetEventStoreCommitAttempt.EventType, checkpoint, Int32.MaxValue);
+                return resolved.Event.EventType.StartsWith("$");
             }
         }
     }

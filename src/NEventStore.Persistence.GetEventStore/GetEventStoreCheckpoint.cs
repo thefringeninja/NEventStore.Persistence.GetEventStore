@@ -8,17 +8,20 @@
 
         public GetEventStoreCheckpoint(int eventNumber)
         {
-            if (_eventNumber < 0) throw new ArgumentOutOfRangeException("eventNumber");
+            Guard.Against<ArgumentOutOfRangeException>(_eventNumber < 0, "eventNumber");
             _eventNumber = eventNumber;
         }
 
         public int CompareTo(ICheckpoint other)
         {
+            if (other == null) return 1;
+            
             var otherCheckpoint = other as GetEventStoreCheckpoint;
-            if (otherCheckpoint == null)
-                throw new ArgumentException(
-                    string.Format("Expected an ICheckpoint of type {0}, got {1} instead.",
-                        typeof (GetEventStoreCheckpoint), other.GetType()), "other");
+
+            Guard.Against<ArgumentException>(
+                otherCheckpoint == null,
+                string.Format("Expected an ICheckpoint of type {0}, got {1} instead.",
+                    typeof (GetEventStoreCheckpoint), other.GetType()), "other");
 
             return _eventNumber.CompareTo(otherCheckpoint._eventNumber);
         }
@@ -28,14 +31,14 @@
             get { return _eventNumber.ToString(); }
         }
 
-        public static implicit operator GetEventStoreCheckpoint(int eventNumber)
+        public static implicit operator GetEventStoreCheckpoint(int? eventNumber)
         {
-            return new GetEventStoreCheckpoint(eventNumber);
+            return eventNumber.HasValue ? new GetEventStoreCheckpoint(eventNumber.Value) : null;
         }
 
-        public static implicit operator int(GetEventStoreCheckpoint checkpoint)
+        public static implicit operator int?(GetEventStoreCheckpoint checkpoint)
         {
-            return checkpoint._eventNumber;
+            return checkpoint == null ? default(int?) : checkpoint._eventNumber;
         }
 
         public static GetEventStoreCheckpoint Parse(string checkpointToken)
@@ -43,7 +46,7 @@
             int eventNumber;
 
             if (string.IsNullOrWhiteSpace(checkpointToken))
-                return 0;
+                return null;
 
             if (false == Int32.TryParse(checkpointToken, out eventNumber))
             {

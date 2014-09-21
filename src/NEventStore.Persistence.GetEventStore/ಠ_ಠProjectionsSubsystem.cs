@@ -1,4 +1,7 @@
-﻿namespace NEventStore.Persistence.GetEventStore
+﻿using EventStore.Core.Messaging;
+using EventStore.Projections.Core.Messages;
+
+namespace NEventStore.Persistence.GetEventStore
 {
     using System;
     using System.Collections.Generic;
@@ -56,6 +59,8 @@
             _queueMap = _coreQueues.ToDictionary(v => v.Key, v => (IPublisher) v.Value);
 
             ProjectionManagerNode.CreateManagerService(standardComponents, projectionsStandardComponents, _queueMap);
+
+            _masterOutputBus.Subscribe(standardComponents.MainQueue.WidenFrom<ProjectionManagementMessage.RequestSystemProjections, Message>());
         }
 
 

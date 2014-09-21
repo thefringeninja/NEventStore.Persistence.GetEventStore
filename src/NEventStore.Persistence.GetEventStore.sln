@@ -18,6 +18,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore", "..\dependenc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore.Persistence.AcceptanceTests", "..\dependencies\NEventStore\src\NEventStore.Persistence.AcceptanceTests\NEventStore.Persistence.AcceptanceTests.csproj", "{3FE594FE-16FF-4405-97D5-5A58FB12520B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".docs", ".docs", "{593D8468-3B2C-4C7E-8F07-1DACC53FCAA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NEventStore.MirroringSample", "NEventStore.MirroringSample\NEventStore.MirroringSample.csproj", "{8F6C60F1-A343-40FD-814F-78BDEAC200B4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -40,8 +44,15 @@ Global
 		{3FE594FE-16FF-4405-97D5-5A58FB12520B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3FE594FE-16FF-4405-97D5-5A58FB12520B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3FE594FE-16FF-4405-97D5-5A58FB12520B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F6C60F1-A343-40FD-814F-78BDEAC200B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F6C60F1-A343-40FD-814F-78BDEAC200B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F6C60F1-A343-40FD-814F-78BDEAC200B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F6C60F1-A343-40FD-814F-78BDEAC200B4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8F6C60F1-A343-40FD-814F-78BDEAC200B4} = {593D8468-3B2C-4C7E-8F07-1DACC53FCAA9}
 	EndGlobalSection
 EndGlobal
